@@ -10,6 +10,7 @@ This README is inspired by the structure used in [`react-use-intercom`'s README]
 - **TypeScript**: fully typed `ChatProps`
 - **Fields API**: set `contactFields` and `conversationFields` on init (by `internal_name`)
 - **Events**: `onOpen`, `onClose`, and `onReady` when `window.sparrowDesk` becomes available
+- **Performance-friendly**: optionally defer widget initialization until user interaction
 
 ## Installation
 
@@ -75,6 +76,58 @@ export function App() {
 }
 ```
 
+## Next.js
+
+### App Router (`app/`) usage
+
+In the App Router, components are Server Components by default. Since `Chat` uses hooks, render it from a Client Component.
+
+```tsx
+'use client'
+
+import * as React from 'react'
+import { Chat } from '@sparrowdesk/chat-react'
+
+export function SparrowDeskChat() {
+  return (
+    <Chat
+      domain={process.env.NEXT_PUBLIC_SD_DOMAIN!}
+      token={process.env.NEXT_PUBLIC_SD_TOKEN!}
+    />
+  )
+}
+```
+
+Then include it somewhere in your tree (for example in `app/layout.tsx`):
+
+```tsx
+import * as React from 'react'
+import { SparrowDeskChat } from './SparrowDeskChat'
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+        <SparrowDeskChat />
+      </body>
+    </html>
+  )
+}
+```
+
+### Pages Router (`pages/`) usage (optional `ssr: false`)
+
+If you prefer to ensure the component only renders client-side, you can dynamically import it:
+
+```tsx
+import dynamic from 'next/dynamic'
+
+export const SparrowDeskChat = dynamic(() => import('../components/SparrowDeskChat'), {
+  ssr: false,
+})
+```
+
 ## API
 
 ### `Chat`
@@ -95,6 +148,8 @@ export function App() {
 | `onClose` | `() => void` |  |  | Registered via `window.sparrowDesk.onClose(...)` |
 | `openOnInit` | `boolean` |  | `false` | Calls `window.sparrowDesk.openWidget()` when ready |
 | `hideOnInit` | `boolean` |  | `false` | Calls `window.sparrowDesk.hideWidget()` when ready |
+| `connectOnPageLoad` | `boolean` |  | `true` | If `false`, defers injecting the widget script + waiting for the API until the visitor interacts (when `initializeOnInteraction` is enabled) |
+| `initializeOnInteraction` | `boolean` |  | `true` | When `connectOnPageLoad={false}`, initialize on the first `pointerdown` / `keydown` |
 | `readyTimeoutMs` | `number` |  | `10000` | How long to wait for `window.sparrowDesk` to appear |
 | `cleanupOnUnmount` | `boolean` |  | `false` | If true, removes the injected script tag on unmount |
 
@@ -151,6 +206,39 @@ export function App() {
     </>
   )
 }
+```
+
+## Performance: defer initialization until user interaction
+
+If you want to avoid loading the widget script on initial page load, you can defer initialization until the visitor interacts.
+This is implemented by delaying script injection.
+
+### Option A: `Chat` (auto-init on first interaction)
+
+```tsx
+<Chat
+  domain="sparrowdesk7975310.sparrowdesk.com"
+  token="YOUR_WIDGET_TOKEN"
+  connectOnPageLoad={false}
+  initializeOnInteraction
+/>
+```
+
+### Option B: Provider + Hook (manual control)
+
+```tsx
+function HelpButton() {
+  const { openWidget } = useSparrowDesk()
+  return <button onClick={() => openWidget()}>Chat</button>
+}
+
+<SparrowDeskProvider
+  domain="sparrowdesk7975310.sparrowdesk.com"
+  token="YOUR_WIDGET_TOKEN"
+  connectOnPageLoad={false}
+>
+  <HelpButton />
+</SparrowDeskProvider>
 ```
 
 ## Development

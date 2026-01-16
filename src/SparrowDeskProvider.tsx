@@ -27,11 +27,20 @@ export type SparrowDeskProviderProps = {
    */
   shouldInitialize?: boolean
 
+  /**
+   * If `false`, defers injecting the widget script + waiting for the API until
+   * you call `initialize()` (or invoke `openWidget`/`closeWidget`/`hideWidget`/etc).
+   *
+   * This is a performance optimization implemented at the wrapper level by delaying
+   * script injection until you explicitly initialize.
+   */
+  connectOnPageLoad?: boolean
+
   tags?: string[]
   contactFields?: Record<string, unknown>
   conversationFields?: Record<string, unknown>
 
-  onReady?: (api: SparrowDeskProps) => void
+  onReady?: (api: SparrowDeskApi) => void
   onOpen?: () => void
   onClose?: () => void
 
@@ -44,7 +53,9 @@ export type SparrowDeskProviderProps = {
 
 export type SparrowDeskContextValue = {
   isReady: boolean
-  api: SparrowDeskProps | null
+  api: SparrowDeskApi | null
+  /** Ensures the widget script is injected (if enabled) and begins waiting for the API. */
+  initialize: () => void
   openWidget: () => void
   closeWidget: () => void
   hideWidget: () => void
@@ -68,6 +79,7 @@ export function SparrowDeskProvider({
   token,
   children,
   shouldInitialize = true,
+  connectOnPageLoad = true,
   tags,
   contactFields,
   conversationFields,
@@ -89,11 +101,20 @@ export function SparrowDeskProvider({
   const onReadyRef = useLatest(onReady)
   const onOpenRef = useLatest(onOpen)
   const onCloseRef = useLatest(onClose)
+  const tagsRef = useLatest(tags)
+  const contactFieldsRef = useLatest(contactFields)
+  const conversationFieldsRef = useLatest(conversationFields)
+  const openOnInitRef = useLatest(openOnInit)
+  const hideOnInitRef = useLatest(hideOnInit)
 
-  const apiRef = useRef<SparrowDeskProps | null>(null)
+  const apiRef = useRef<SparrowDeskApi | null>(null)
   const registeredCallbacksRef = useRef(false)
   const didOpenOnceRef = useRef(false)
   const didHideOnceRef = useRef(false)
+  const scriptHandleRef = useRef<ReturnType<typeof acquireWidgetScript> | null>(null)
+  const initStartedRef = useRef(false)
+  const initCancelRef = useRef<(() => void) | null>(null)
+  const pendingCallsRef = useRef<Array<(api: SparrowDeskApi) => void>>([])
 
   const [isReady, setIsReady] = useState(false)
 
@@ -102,31 +123,36 @@ export function SparrowDeskProvider({
     didHideOnceRef.current = false
     apiRef.current = null
     registeredCallbacksRef.current = false
+    initStartedRef.current = false
+    initCancelRef.current?.()
+    initCancelRef.current = null
+    pendingCallsRef.current = []
+    scriptHandleRef.current?.release()
+    scriptHandleRef.current = null
     setIsReady(false)
   }, [normalized.domain, normalized.token])
 
-  useEffect(() => {
+  const initialize = React.useCallback(() => {
     if (!isBrowser()) return
     if (!normalized.domain || !normalized.token) return
 
     // Always set globals; the embed snippet expects these.
     setWidgetGlobals(normalized.domain, normalized.token)
 
-    if (!shouldInitialize) return
-
-    removeOtherWidgetScripts(DEFAULT_SCRIPT_SRC)
-    const handle = acquireWidgetScript(DEFAULT_SCRIPT_SRC, cleanupOnUnmount)
-
-    return () => {
-      handle.release()
+    // Inject the script if this wrapper is responsible for initialization.
+    if (shouldInitialize && !scriptHandleRef.current) {
+      removeOtherWidgetScripts(DEFAULT_SCRIPT_SRC)
+      scriptHandleRef.current = acquireWidgetScript(DEFAULT_SCRIPT_SRC, cleanupOnUnmount)
     }
-  }, [normalized.domain, normalized.token, cleanupOnUnmount, shouldInitialize])
 
-  useEffect(() => {
-    if (!isBrowser()) return
-    if (!normalized.domain || !normalized.token) return
+    // Begin waiting for the API once per (domain, token) pair.
+    if (initStartedRef.current) return
+    initStartedRef.current = true
 
     let cancelled = false
+    initCancelRef.current = () => {
+      cancelled = true
+    }
 
       ; (async () => {
         const api = await waitForSparrowDeskApi(readyTimeoutMs)
@@ -143,31 +169,58 @@ export function SparrowDeskProvider({
 
         onReadyRef.current?.(api)
 
-        if (Array.isArray(tags) && tags.length) api.setTags?.(tags)
-        if (contactFields && Object.keys(contactFields).length) api.setContactFields?.(contactFields)
-        if (conversationFields && Object.keys(conversationFields).length)
-          api.setConversationFields?.(conversationFields)
+        const latestTags = tagsRef.current
+        const latestContactFields = contactFieldsRef.current
+        const latestConversationFields = conversationFieldsRef.current
+        if (Array.isArray(latestTags) && latestTags.length) api.setTags?.(latestTags)
+        if (latestContactFields && Object.keys(latestContactFields).length)
+          api.setContactFields?.(latestContactFields)
+        if (latestConversationFields && Object.keys(latestConversationFields).length)
+          api.setConversationFields?.(latestConversationFields)
 
-        if (hideOnInit && !didHideOnceRef.current) {
+        if (hideOnInitRef.current && !didHideOnceRef.current) {
           api.hideWidget?.()
           didHideOnceRef.current = true
         }
-        if (openOnInit && !didOpenOnceRef.current) {
+        if (openOnInitRef.current && !didOpenOnceRef.current) {
           api.openWidget?.()
           didOpenOnceRef.current = true
         }
-      })()
 
-    return () => {
-      cancelled = true
-    }
+        const pending = pendingCallsRef.current
+        pendingCallsRef.current = []
+        pending.forEach((fn) => fn(api))
+      })()
   }, [
+    cleanupOnUnmount,
     normalized.domain,
     normalized.token,
-    openOnInit,
-    hideOnInit,
+    onCloseRef,
+    onOpenRef,
+    onReadyRef,
     readyTimeoutMs,
+    shouldInitialize,
   ])
+
+  useEffect(() => {
+    if (!connectOnPageLoad) {
+      // Still set globals immediately so consumers can rely on them being present.
+      if (isBrowser() && normalized.domain && normalized.token) {
+        setWidgetGlobals(normalized.domain, normalized.token)
+      }
+      return
+    }
+
+    initialize()
+    return () => {
+      initCancelRef.current?.()
+      initCancelRef.current = null
+      // If we cancelled before becoming ready, allow a new initialize() call to restart polling.
+      if (!apiRef.current) initStartedRef.current = false
+      scriptHandleRef.current?.release()
+      scriptHandleRef.current = null
+    }
+  }, [connectOnPageLoad, initialize, normalized.domain, normalized.token])
 
   // Apply updates to tags/fields without re-waiting for the API.
   useEffect(() => {
@@ -181,15 +234,28 @@ export function SparrowDeskProvider({
   }, [tags, contactFields, conversationFields])
 
   const methods = useMemo<Omit<SparrowDeskContextValue, 'isReady' | 'api'>>(() => {
-    return {
-      openWidget: () => apiRef.current?.openWidget?.(),
-      closeWidget: () => apiRef.current?.closeWidget?.(),
-      hideWidget: () => apiRef.current?.hideWidget?.(),
-      setTags: (t) => apiRef.current?.setTags?.(t),
-      setContactFields: (f) => apiRef.current?.setContactFields?.(f),
-      setConversationFields: (f) => apiRef.current?.setConversationFields?.(f),
+    const callOrQueue = (fn: (api: SparrowDeskApi) => void) => {
+      const api = apiRef.current
+      if (api) {
+        fn(api)
+        return
+      }
+      if (!connectOnPageLoad) {
+        initialize()
+        pendingCallsRef.current.push(fn)
+      }
     }
-  }, [])
+
+    return {
+      initialize,
+      openWidget: () => callOrQueue((api) => api.openWidget?.()),
+      closeWidget: () => callOrQueue((api) => api.closeWidget?.()),
+      hideWidget: () => callOrQueue((api) => api.hideWidget?.()),
+      setTags: (t) => callOrQueue((api) => api.setTags?.(t)),
+      setContactFields: (f) => callOrQueue((api) => api.setContactFields?.(f)),
+      setConversationFields: (f) => callOrQueue((api) => api.setConversationFields?.(f)),
+    }
+  }, [connectOnPageLoad, initialize])
 
   const value = useMemo<SparrowDeskContextValue>(() => {
     return {

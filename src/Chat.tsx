@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   DEFAULT_READY_TIMEOUT_MS,
   DEFAULT_SCRIPT_SRC,
@@ -33,7 +33,7 @@ export interface ChatProps {
   conversationFields?: Record<string, unknown>
 
   /** Called once the widget API is available on `window.sparrowDesk`. */
-  onReady?: (api: SparrowDeskProps) => void
+  onReady?: (api: SparrowDeskApi) => void
   /** Called when the widget opens (registered via `window.sparrowDesk.onOpen`). */
   onOpen?: () => void
   /** Called when the widget closes (registered via `window.sparrowDesk.onClose`). */
@@ -50,6 +50,21 @@ export interface ChatProps {
    * fields/tags + register callbacks.
    */
   shouldInitialize?: boolean
+
+  /**
+   * If `false`, defers injecting the widget script + waiting for the API until
+   * the visitor interacts (when `initializeOnInteraction` is enabled).
+   *
+   * This is a performance optimization implemented at the wrapper level by delaying
+   * script injection.
+   */
+  connectOnPageLoad?: boolean
+
+  /**
+   * When `connectOnPageLoad={false}`, if `true`, initialize the widget on the first
+   * user interaction (pointer or keyboard), then remove those listeners.
+   */
+  initializeOnInteraction?: boolean
 
   /** If true, removes the injected script tag on unmount. */
   cleanupOnUnmount?: boolean
@@ -73,6 +88,8 @@ export const Chat: React.FC<ChatProps> = ({
   openOnInit = false,
   hideOnInit = false,
   shouldInitialize = true,
+  connectOnPageLoad = true,
+  initializeOnInteraction = true,
   cleanupOnUnmount = false,
   readyTimeoutMs = DEFAULT_READY_TIMEOUT_MS,
 }) => {
@@ -88,14 +105,16 @@ export const Chat: React.FC<ChatProps> = ({
   const onReadyRef = useLatest(onReady)
 
   const registeredCallbacksRef = useRef(false)
-  const apiRef = useRef<SparrowDeskProps | null>(null)
+  const apiRef = useRef<SparrowDeskApi | null>(null)
   const didOpenOnceRef = useRef(false)
   const didHideOnceRef = useRef(false)
+  const [shouldStart, setShouldStart] = useState(connectOnPageLoad)
   useEffect(() => {
     didOpenOnceRef.current = false
     didHideOnceRef.current = false
     apiRef.current = null
     registeredCallbacksRef.current = false
+    setShouldStart(connectOnPageLoad)
   }, [normalized.domain, normalized.token])
 
   useEffect(() => {
@@ -106,6 +125,7 @@ export const Chat: React.FC<ChatProps> = ({
     setWidgetGlobals(normalized.domain, normalized.token)
 
     if (!shouldInitialize) return
+    if (!shouldStart) return
 
     // Keep only one SparrowDesk widget script on the page for this wrapper.
     removeOtherWidgetScripts(DEFAULT_SCRIPT_SRC)
@@ -114,11 +134,12 @@ export const Chat: React.FC<ChatProps> = ({
     return () => {
       handle.release()
     }
-  }, [normalized.domain, normalized.token, cleanupOnUnmount, shouldInitialize])
+  }, [normalized.domain, normalized.token, cleanupOnUnmount, shouldInitialize, shouldStart])
 
   useEffect(() => {
     if (!isBrowser()) return
     if (!normalized.domain || !normalized.token) return
+    if (!shouldStart) return
 
     let cancelled = false
 
@@ -162,6 +183,36 @@ export const Chat: React.FC<ChatProps> = ({
     openOnInit,
     hideOnInit,
     readyTimeoutMs,
+    shouldStart,
+  ])
+
+  useEffect(() => {
+    if (!isBrowser()) return
+    if (connectOnPageLoad) return
+    if (!initializeOnInteraction) return
+    if (shouldStart) return
+    if (!normalized.domain || !normalized.token) return
+
+    const onFirstInteraction = () => {
+      setShouldStart(true)
+      cleanup()
+    }
+
+    const cleanup = () => {
+      document.removeEventListener('pointerdown', onFirstInteraction, true)
+      document.removeEventListener('keydown', onFirstInteraction, true)
+    }
+
+    document.addEventListener('pointerdown', onFirstInteraction, true)
+    document.addEventListener('keydown', onFirstInteraction, true)
+
+    return cleanup
+  }, [
+    connectOnPageLoad,
+    initializeOnInteraction,
+    normalized.domain,
+    normalized.token,
+    shouldStart,
   ])
 
   // If tags/fields change after init, apply them without re-waiting for the API.

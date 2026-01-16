@@ -96,4 +96,32 @@ test('applies tags + contact fields + conversation fields and wires open/close c
   expect(handleClose).toHaveBeenCalled()
 })
 
+test('can defer initialization until user interaction (connectOnPageLoad=false)', async () => {
+  const handleReady = vi.fn()
+
+  await render(
+    <Chat
+      domain="sparrowdesk7975310.sparrowdesk.com"
+      token="test-token"
+      shouldInitialize={false}
+      connectOnPageLoad={false}
+      initializeOnInteraction
+      onReady={handleReady}
+      readyTimeoutMs={1000}
+    />,
+  )
+
+  globalThis.sparrowDesk = {
+    openWidget: vi.fn(),
+  }
+
+  // Should not auto-init until first interaction.
+  await new Promise((r) => setTimeout(r, 50))
+  expect(handleReady).not.toHaveBeenCalled()
+
+  document.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+
+  await expect.poll(() => handleReady.mock.calls.length).toBeGreaterThan(0)
+})
+
 

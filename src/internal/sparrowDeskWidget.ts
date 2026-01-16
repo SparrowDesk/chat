@@ -1,6 +1,6 @@
 declare global {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-  interface SparrowDeskProps {
+  interface SparrowDeskApi {
     openWidget?: () => void
     closeWidget?: () => void
     hideWidget?: () => void
@@ -15,7 +15,7 @@ declare global {
   interface Window {
     SD_WIDGET_TOKEN?: string
     SD_WIDGET_DOMAIN?: string
-    sparrowDesk?: SparrowDeskProps
+    sparrowDesk?: SparrowDeskApi
   }
 }
 
@@ -94,7 +94,7 @@ export function acquireWidgetScript(src: string, cleanupOnUnmount: boolean) {
   }
 }
 
-export async function waitForSparrowDeskApi(timeoutMs: number): Promise<SparrowDeskProps | null> {
+export async function waitForSparrowDeskApi(timeoutMs: number): Promise<SparrowDeskApi | null> {
   const w = globalThis as unknown as Window
 
   // Fast path: already available.
