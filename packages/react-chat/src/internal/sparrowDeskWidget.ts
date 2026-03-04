@@ -110,5 +110,3 @@ export async function waitForSparrowDeskApi(timeoutMs: number): Promise<SparrowD
   }
   return null
 }
-
-

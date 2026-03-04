@@ -267,5 +267,3 @@ export function SparrowDeskProvider({
 
   return <SparrowDeskContext.Provider value={value}>{children}</SparrowDeskContext.Provider>
 }
-
-

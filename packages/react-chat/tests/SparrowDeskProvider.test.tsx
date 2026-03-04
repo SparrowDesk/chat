@@ -58,7 +58,7 @@ test('provider exposes widget methods via useSparrowDesk()', async () => {
       domain="sparrowdesk7975310.sparrowdesk.com"
       token="test-token"
       shouldInitialize={false}
-      // Use polling path; we’ll set `sparrowDesk` after mount.
+      // Use polling path; we'll set `sparrowDesk` after mount.
       readyTimeoutMs={1000}
       onReady={onReady}
     >
@@ -197,5 +197,3 @@ test('connectOnPageLoad=true does not get stuck if props change before API becom
   await expect.poll(() => onReady.mock.calls.length).toBeGreaterThan(0)
   expect(setTags).toHaveBeenCalledWith(['b'])
 })
-
-

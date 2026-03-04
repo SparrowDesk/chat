@@ -123,5 +123,3 @@ test('can defer initialization until user interaction (connectOnPageLoad=false)'
 
   await expect.poll(() => handleReady.mock.calls.length).toBeGreaterThan(0)
 })
-
-

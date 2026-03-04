@@ -230,5 +230,3 @@ export const Chat: React.FC<ChatProps> = ({
   if (!normalized.domain || !normalized.token) return null
   return <div data-sd-chat-widget-container="" />
 }
-
-

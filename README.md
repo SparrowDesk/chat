@@ -1,4 +1,14 @@
-# SparrowDesk Chat Widget (React)
+# SparrowDesk Chat Widget
+
+A monorepo for SparrowDesk chat widget bindings across frameworks (React, Vue, Solid, Vite, etc.), inspired by [TanStack Table](https://github.com/TanStack/table).
+
+## Packages
+
+| Package | Description |
+|---------|-------------|
+| `@sparrowdesk/react-chat` | React bindings for the SparrowDesk chat widget |
+
+## React (`@sparrowdesk/react-chat`)
 
 A small React abstraction around the SparrowDesk chat widget embed snippet. It loads the widget script once, sets the required globals (`SD_WIDGET_DOMAIN`, `SD_WIDGET_TOKEN`), and provides a React-friendly API for setting tags + contact/conversation fields and listening to open/close events.
 
@@ -16,20 +26,20 @@ This README is inspired by the structure used in [`react-use-intercom`'s README]
 
 ```sh
 # pnpm
-pnpm add @sparrowdesk/chat-react
+pnpm add @sparrowdesk/react-chat
 
 # npm
-npm install @sparrowdesk/chat-react
+npm install @sparrowdesk/react-chat
 
 # yarn
-yarn add @sparrowdesk/chat-react
+yarn add @sparrowdesk/react-chat
 ```
 
 ## Quickstart
 
 ```tsx
 import * as React from 'react'
-import { Chat } from '@sparrowdesk/chat-react'
+import { Chat } from '@sparrowdesk/react-chat'
 
 export function App() {
   return (
@@ -48,7 +58,7 @@ If you want to control the widget from anywhere in your app (open/close/hide, se
 
 ```tsx
 import * as React from 'react'
-import { SparrowDeskProvider, useSparrowDesk } from '@sparrowdesk/chat-react'
+import { SparrowDeskProvider, useSparrowDesk } from '@sparrowdesk/react-chat'
 
 const HomePage = () => {
   const { openWidget, closeWidget, hideWidget, setTags } = useSparrowDesk()
@@ -86,7 +96,7 @@ In the App Router, components are Server Components by default. Since `Chat` use
 'use client'
 
 import * as React from 'react'
-import { Chat } from '@sparrowdesk/chat-react'
+import { Chat } from '@sparrowdesk/react-chat'
 
 export function SparrowDeskChat() {
   return (
@@ -159,7 +169,7 @@ export const SparrowDeskChat = dynamic(() => import('../components/SparrowDeskCh
 
 ```tsx
 import * as React from 'react'
-import { Chat } from '@sparrowdesk/chat-react'
+import { Chat } from '@sparrowdesk/react-chat'
 
 export function App() {
   return (
@@ -187,7 +197,7 @@ export function App() {
 
 ```tsx
 import * as React from 'react'
-import { Chat } from '@sparrowdesk/chat-react'
+import { Chat } from '@sparrowdesk/react-chat'
 
 export function App() {
   return (
@@ -247,12 +257,26 @@ function HelpButton() {
 # install deps
 pnpm install
 
-# run playground
+# build all packages
+pnpm run build
+
+# run React example (playground)
 pnpm run play
 
-# run tests
+# run tests (browser-based; run once: pnpm run test:prepare)
 pnpm run test
 
-# build library
-pnpm run build
+# typecheck
+pnpm run typecheck
+```
+
+If tests fail with a Playwright browser error, run `pnpm run test:prepare` to install Chromium.
+
+### Project structure
+
+```
+packages/
+  react-chat/     # @sparrowdesk/react-chat – React bindings
+examples/
+  react/          # React example / playground
 ```
