@@ -12,8 +12,6 @@ A monorepo for SparrowDesk chat widget bindings across frameworks (React, Vue, S
 
 A small React abstraction around the SparrowDesk chat widget embed snippet. It loads the widget script once, sets the required globals (`SD_WIDGET_DOMAIN`, `SD_WIDGET_TOKEN`), and provides a React-friendly API for setting tags + contact/conversation fields and listening to open/close events.
 
-This README is inspired by the structure used in [`react-use-intercom`'s README](https://raw.githubusercontent.com/devrnt/react-use-intercom/refs/heads/main/packages/react-use-intercom/README.md).
-
 ## Features
 - **Tiny wrapper**: injects the SparrowDesk widget script once and dedupes subsequent mounts
 - **SSR-safe**: does nothing when `window` / `document` are unavailable
@@ -234,7 +232,20 @@ This is implemented by delaying script injection.
 />
 ```
 
-### Option B: Provider + Hook (manual control)
+### Option B: Provider + Hook (auto-init on first interaction)
+
+```tsx
+<SparrowDeskProvider
+  domain="sparrowdesk7975310.sparrowdesk.com"
+  token="YOUR_WIDGET_TOKEN"
+  connectOnPageLoad={false}
+  initializeOnInteraction
+>
+  <HelpButton />
+</SparrowDeskProvider>
+```
+
+### Option C: Provider + Hook (manual control)
 
 ```tsx
 function HelpButton() {
@@ -246,6 +257,7 @@ function HelpButton() {
   domain="sparrowdesk7975310.sparrowdesk.com"
   token="YOUR_WIDGET_TOKEN"
   connectOnPageLoad={false}
+  initializeOnInteraction={false}
 >
   <HelpButton />
 </SparrowDeskProvider>
