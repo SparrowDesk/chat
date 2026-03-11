@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  type SparrowDeskApi,
   DEFAULT_READY_TIMEOUT_MS,
   DEFAULT_SCRIPT_SRC,
   acquireWidgetScript,
@@ -103,6 +104,9 @@ export const Chat: React.FC<ChatProps> = ({
   const onOpenRef = useLatest(onOpen)
   const onCloseRef = useLatest(onClose)
   const onReadyRef = useLatest(onReady)
+  const tagsRef = useLatest(tags)
+  const contactFieldsRef = useLatest(contactFields)
+  const conversationFieldsRef = useLatest(conversationFields)
 
   const registeredCallbacksRef = useRef(false)
   const apiRef = useRef<SparrowDeskApi | null>(null)
@@ -158,11 +162,15 @@ export const Chat: React.FC<ChatProps> = ({
 
         onReadyRef.current?.(api)
 
-        // Apply init-time defaults once the API is available.
-        if (Array.isArray(tags) && tags.length) api.setTags?.(tags)
-        if (contactFields && Object.keys(contactFields).length) api.setContactFields?.(contactFields)
-        if (conversationFields && Object.keys(conversationFields).length)
-          api.setConversationFields?.(conversationFields)
+        // Apply init-time defaults once the API is available (use refs for latest values).
+        const latestTags = tagsRef.current
+        const latestContactFields = contactFieldsRef.current
+        const latestConversationFields = conversationFieldsRef.current
+        if (Array.isArray(latestTags) && latestTags.length) api.setTags?.(latestTags)
+        if (latestContactFields && Object.keys(latestContactFields).length)
+          api.setContactFields?.(latestContactFields)
+        if (latestConversationFields && Object.keys(latestConversationFields).length)
+          api.setConversationFields?.(latestConversationFields)
 
         if (hideOnInit && !didHideOnceRef.current) {
           api.hideWidget?.()

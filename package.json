@@ -5,7 +5,7 @@
   "description": "SparrowDesk Chat Widget — React, Vue, Solid, and more.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sparrowdesk/sd-chat-widget-react.git"
+    "url": "git+https://github.com/sparrowdesk/chat.git"
   },
   "scripts": {
     "build": "pnpm --filter \"./packages/**\" run build",

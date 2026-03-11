@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  type SparrowDeskApi,
   DEFAULT_READY_TIMEOUT_MS,
   DEFAULT_SCRIPT_SRC,
   acquireWidgetScript,
@@ -29,12 +30,19 @@ export type SparrowDeskProviderProps = {
 
   /**
    * If `false`, defers injecting the widget script + waiting for the API until
-   * you call `initialize()` (or invoke `openWidget`/`closeWidget`/`hideWidget`/etc).
+   * you call `initialize()` (or invoke `openWidget`/`closeWidget`/`hideWidget`/etc),
+   * or until the first user interaction when `initializeOnInteraction` is enabled.
    *
    * This is a performance optimization implemented at the wrapper level by delaying
    * script injection until you explicitly initialize.
    */
   connectOnPageLoad?: boolean
+
+  /**
+   * When `connectOnPageLoad={false}`, if `true`, initialize on the first
+   * user interaction (pointer or keyboard). Defaults to `true`.
+   */
+  initializeOnInteraction?: boolean
 
   tags?: string[]
   contactFields?: Record<string, unknown>
@@ -80,6 +88,7 @@ export function SparrowDeskProvider({
   children,
   shouldInitialize = true,
   connectOnPageLoad = true,
+  initializeOnInteraction = true,
   tags,
   contactFields,
   conversationFields,
@@ -117,6 +126,11 @@ export function SparrowDeskProvider({
   const pendingCallsRef = useRef<Array<(api: SparrowDeskApi) => void>>([])
 
   const [isReady, setIsReady] = useState(false)
+  const [shouldStart, setShouldStart] = useState(connectOnPageLoad)
+
+  useEffect(() => {
+    setShouldStart(connectOnPageLoad)
+  }, [connectOnPageLoad])
 
   useEffect(() => {
     didOpenOnceRef.current = false
@@ -130,7 +144,8 @@ export function SparrowDeskProvider({
     scriptHandleRef.current?.release()
     scriptHandleRef.current = null
     setIsReady(false)
-  }, [normalized.domain, normalized.token])
+    setShouldStart(connectOnPageLoad)
+  }, [normalized.domain, normalized.token, connectOnPageLoad])
 
   const initialize = React.useCallback(() => {
     if (!isBrowser()) return
@@ -195,22 +210,15 @@ export function SparrowDeskProvider({
     cleanupOnUnmount,
     normalized.domain,
     normalized.token,
-    onCloseRef,
-    onOpenRef,
-    onReadyRef,
     readyTimeoutMs,
     shouldInitialize,
   ])
 
   useEffect(() => {
-    if (!connectOnPageLoad) {
-      // Still set globals immediately so consumers can rely on them being present.
-      if (isBrowser() && normalized.domain && normalized.token) {
-        setWidgetGlobals(normalized.domain, normalized.token)
-      }
-      return
-    }
-
+    if (!isBrowser()) return
+    if (!normalized.domain || !normalized.token) return
+    setWidgetGlobals(normalized.domain, normalized.token)
+    if (!shouldStart) return
     initialize()
     return () => {
       initCancelRef.current?.()
@@ -220,7 +228,36 @@ export function SparrowDeskProvider({
       scriptHandleRef.current?.release()
       scriptHandleRef.current = null
     }
-  }, [connectOnPageLoad, initialize, normalized.domain, normalized.token])
+  }, [initialize, normalized.domain, normalized.token, shouldStart])
+
+  useEffect(() => {
+    if (!isBrowser()) return
+    if (connectOnPageLoad) return
+    if (!initializeOnInteraction) return
+    if (shouldStart) return
+    if (!normalized.domain || !normalized.token) return
+
+    const onFirstInteraction = () => {
+      setShouldStart(true)
+      cleanup()
+    }
+
+    const cleanup = () => {
+      document.removeEventListener('pointerdown', onFirstInteraction, true)
+      document.removeEventListener('keydown', onFirstInteraction, true)
+    }
+
+    document.addEventListener('pointerdown', onFirstInteraction, true)
+    document.addEventListener('keydown', onFirstInteraction, true)
+
+    return cleanup
+  }, [
+    connectOnPageLoad,
+    initializeOnInteraction,
+    normalized.domain,
+    normalized.token,
+    shouldStart,
+  ])
 
   // Apply updates to tags/fields without re-waiting for the API.
   useEffect(() => {

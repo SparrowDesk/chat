@@ -1,17 +1,16 @@
-declare global {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-  interface SparrowDeskApi {
-    openWidget?: () => void
-    closeWidget?: () => void
-    hideWidget?: () => void
-    onOpen?: (callback: () => void) => void
-    onClose?: (callback: () => void) => void
-    setTags?: (tags: string[]) => void
-    setConversationFields?: (fields: Record<string, unknown>) => void
-    setContactFields?: (fields: Record<string, unknown>) => void
-    status?: 'open' | 'closed'
-  }
+export interface SparrowDeskApi {
+  openWidget?: () => void
+  closeWidget?: () => void
+  hideWidget?: () => void
+  onOpen?: (callback: () => void) => void
+  onClose?: (callback: () => void) => void
+  setTags?: (tags: string[]) => void
+  setConversationFields?: (fields: Record<string, unknown>) => void
+  setContactFields?: (fields: Record<string, unknown>) => void
+  status?: 'open' | 'closed'
+}
 
+declare global {
   interface Window {
     SD_WIDGET_TOKEN?: string
     SD_WIDGET_DOMAIN?: string

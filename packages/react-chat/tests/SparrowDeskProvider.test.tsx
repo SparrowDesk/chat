@@ -156,6 +156,33 @@ test('provider can defer initialization until openWidget() is called (queues cal
   expect(onReady).toHaveBeenCalled()
 })
 
+test('provider can defer initialization until first user interaction (initializeOnInteraction)', async () => {
+  const onReady = vi.fn()
+
+  await render(
+    <SparrowDeskProvider
+      domain="sparrowdesk7975310.sparrowdesk.com"
+      token="test-token"
+      shouldInitialize={false}
+      connectOnPageLoad={false}
+      initializeOnInteraction
+      readyTimeoutMs={1000}
+      onReady={onReady}
+    >
+      <div>consumer</div>
+    </SparrowDeskProvider>,
+  )
+
+  globalThis.sparrowDesk = { openWidget: vi.fn() }
+
+  await new Promise((r) => setTimeout(r, 50))
+  expect(onReady).not.toHaveBeenCalled()
+
+  document.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+
+  await expect.poll(() => onReady.mock.calls.length).toBeGreaterThan(0)
+})
+
 test('connectOnPageLoad=true does not get stuck if props change before API becomes available', async () => {
   const setTags = vi.fn()
   const onReady = vi.fn()
