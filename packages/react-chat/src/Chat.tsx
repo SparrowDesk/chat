@@ -1,3 +1,4 @@
+import type { FC } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   type SparrowDeskApi,
@@ -77,7 +78,7 @@ export interface ChatProps {
   readyTimeoutMs?: number
 }
 
-export const Chat: React.FC<ChatProps> = ({
+export const Chat: FC<ChatProps> = ({
   domain,
   token,
   tags,
@@ -113,13 +114,18 @@ export const Chat: React.FC<ChatProps> = ({
   const didOpenOnceRef = useRef(false)
   const didHideOnceRef = useRef(false)
   const [shouldStart, setShouldStart] = useState(connectOnPageLoad)
+
+  useEffect(() => {
+    setShouldStart(connectOnPageLoad)
+  }, [connectOnPageLoad])
+
   useEffect(() => {
     didOpenOnceRef.current = false
     didHideOnceRef.current = false
     apiRef.current = null
     registeredCallbacksRef.current = false
     setShouldStart(connectOnPageLoad)
-  }, [normalized.domain, normalized.token])
+  }, [normalized.domain, normalized.token, connectOnPageLoad])
 
   useEffect(() => {
     if (!isBrowser()) return

@@ -74,6 +74,9 @@ export type SparrowDeskContextValue = {
 
 const SparrowDeskContext = React.createContext<SparrowDeskContextValue | null>(null)
 
+/** Bound pending calls while the widget API is loading (avoids unbounded memory if init never completes). */
+const MAX_PENDING_API_CALLS = 50
+
 export function useSparrowDesk(): SparrowDeskContextValue {
   const value = React.useContext(SparrowDeskContext)
   if (!value) {
@@ -277,8 +280,9 @@ export function SparrowDeskProvider({
         fn(api)
         return
       }
-      if (!connectOnPageLoad) {
-        initialize()
+      // Queue whenever the API is not ready yet (including connectOnPageLoad=true + slow load).
+      initialize()
+      if (pendingCallsRef.current.length < MAX_PENDING_API_CALLS) {
         pendingCallsRef.current.push(fn)
       }
     }
@@ -292,7 +296,7 @@ export function SparrowDeskProvider({
       setContactFields: (f) => callOrQueue((api) => api.setContactFields?.(f)),
       setConversationFields: (f) => callOrQueue((api) => api.setConversationFields?.(f)),
     }
-  }, [connectOnPageLoad, initialize])
+  }, [initialize])
 
   const value = useMemo<SparrowDeskContextValue>(() => {
     return {
