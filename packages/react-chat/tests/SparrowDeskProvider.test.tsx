@@ -55,7 +55,7 @@ test('provider exposes widget methods via useSparrowDesk()', async () => {
 
   await render(
     <SparrowDeskProvider
-      domain="sparrowdesk7975310.sparrowdesk.com"
+      domain="your-workspace.sparrowdesk.com"
       token="test-token"
       shouldInitialize={false}
       // Use polling path; we'll set `sparrowDesk` after mount.
@@ -101,7 +101,7 @@ test('provider can defer initialization until initialize() is called', async () 
 
   await render(
     <SparrowDeskProvider
-      domain="sparrowdesk7975310.sparrowdesk.com"
+      domain="your-workspace.sparrowdesk.com"
       token="test-token"
       shouldInitialize={false}
       connectOnPageLoad={false}
@@ -139,7 +139,7 @@ test('provider can defer initialization until openWidget() is called (queues cal
 
   await render(
     <SparrowDeskProvider
-      domain="sparrowdesk7975310.sparrowdesk.com"
+      domain="your-workspace.sparrowdesk.com"
       token="test-token"
       shouldInitialize={false}
       connectOnPageLoad={false}
@@ -161,7 +161,7 @@ test('provider can defer initialization until first user interaction (initialize
 
   await render(
     <SparrowDeskProvider
-      domain="sparrowdesk7975310.sparrowdesk.com"
+      domain="your-workspace.sparrowdesk.com"
       token="test-token"
       shouldInitialize={false}
       connectOnPageLoad={false}
@@ -189,7 +189,7 @@ test('connectOnPageLoad=true does not get stuck if props change before API becom
 
   const r = await render(
     <SparrowDeskProvider
-      domain="sparrowdesk7975310.sparrowdesk.com"
+      domain="your-workspace.sparrowdesk.com"
       token="test-token"
       shouldInitialize={false}
       connectOnPageLoad
@@ -204,7 +204,7 @@ test('connectOnPageLoad=true does not get stuck if props change before API becom
   // Change props that previously caused the init effect to cleanup/cancel.
   await r.rerender(
     <SparrowDeskProvider
-      domain="sparrowdesk7975310.sparrowdesk.com"
+      domain="your-workspace.sparrowdesk.com"
       token="test-token"
       shouldInitialize={false}
       connectOnPageLoad

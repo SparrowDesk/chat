@@ -6,7 +6,7 @@ export function App() {
       <h1>SparrowDesk Chat</h1>
       <p>Replace domain and token below with your SparrowDesk credentials.</p>
       <Chat
-        domain="sparrowdesk7975310.sparrowdesk.com"
+        domain="your-workspace.sparrowdesk.com"
         token="YOUR_TOKEN"
         openOnInit
       />

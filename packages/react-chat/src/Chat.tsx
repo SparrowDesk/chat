@@ -14,7 +14,7 @@ import {
 import { useLatest } from './internal/useLatest'
 
 export interface ChatProps {
-  /** SparrowDesk domain, e.g. "sparrowdesk7975310.sparrowdesk.com" */
+  /** SparrowDesk domain, e.g. "your-workspace.sparrowdesk.com" */
   domain: string
   /** SparrowDesk widget token */
   token: string

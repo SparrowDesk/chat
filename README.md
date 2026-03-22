@@ -42,7 +42,7 @@ import { Chat } from '@sparrowdesk/react-chat'
 export function App() {
   return (
     <Chat
-      domain="sparrowdesk7975310.sparrowdesk.com"
+      domain="your-workspace.sparrowdesk.com"
       token="YOUR_WIDGET_TOKEN"
       openOnInit
     />
@@ -74,7 +74,7 @@ const HomePage = () => {
 export function App() {
   return (
     <SparrowDeskProvider
-      domain="sparrowdesk7975310.sparrowdesk.com"
+      domain="your-workspace.sparrowdesk.com"
       token="YOUR_WIDGET_TOKEN"
       openOnInit
     >
@@ -146,7 +146,7 @@ export const SparrowDeskChat = dynamic(() => import('../components/SparrowDeskCh
 
 | name | type | required | default | description |
 |---|---:|:---:|---:|---|
-| `domain` | `string` | ✅ |  | SparrowDesk domain, e.g. `sparrowdesk7975310.sparrowdesk.com` |
+| `domain` | `string` | ✅ |  | SparrowDesk domain, e.g. `your-workspace.sparrowdesk.com` |
 | `token` | `string` | ✅ |  | SparrowDesk widget token |
 | `tags` | `string[]` |  |  | Calls `window.sparrowDesk.setTags(tags)` when ready |
 | `contactFields` | `Record<string, unknown>` |  |  | Calls `window.sparrowDesk.setContactFields(contactFields)` when ready |
@@ -172,7 +172,7 @@ import { Chat } from '@sparrowdesk/react-chat'
 export function App() {
   return (
     <Chat
-      domain="sparrowdesk7975310.sparrowdesk.com"
+      domain="your-workspace.sparrowdesk.com"
       token="YOUR_WIDGET_TOKEN"
       tags={['vip', 'returning-user']}
       contactFields={{
@@ -201,7 +201,7 @@ export function App() {
   return (
     <>
       <Chat
-        domain="sparrowdesk7975310.sparrowdesk.com"
+        domain="your-workspace.sparrowdesk.com"
         token="YOUR_WIDGET_TOKEN"
         onReady={(api) => {
           // e.g. open immediately, or based on your own logic
@@ -225,7 +225,7 @@ This is implemented by delaying script injection.
 
 ```tsx
 <Chat
-  domain="sparrowdesk7975310.sparrowdesk.com"
+  domain="your-workspace.sparrowdesk.com"
   token="YOUR_WIDGET_TOKEN"
   connectOnPageLoad={false}
   initializeOnInteraction
@@ -236,7 +236,7 @@ This is implemented by delaying script injection.
 
 ```tsx
 <SparrowDeskProvider
-  domain="sparrowdesk7975310.sparrowdesk.com"
+  domain="your-workspace.sparrowdesk.com"
   token="YOUR_WIDGET_TOKEN"
   connectOnPageLoad={false}
   initializeOnInteraction
@@ -254,7 +254,7 @@ function HelpButton() {
 }
 
 <SparrowDeskProvider
-  domain="sparrowdesk7975310.sparrowdesk.com"
+  domain="your-workspace.sparrowdesk.com"
   token="YOUR_WIDGET_TOKEN"
   connectOnPageLoad={false}
   initializeOnInteraction={false}
