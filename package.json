@@ -1,6 +1,5 @@
 {
-  "name": "sparrowdesk-chat",
-  "private": true,
+  "name": "@sparrowdesk/chat",
   "type": "module",
   "description": "SparrowDesk Chat Widget — React, Vue, Solid, and more.",
   "repository": {
