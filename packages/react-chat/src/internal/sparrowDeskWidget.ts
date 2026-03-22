@@ -39,7 +39,6 @@ export function setWidgetGlobals(domain: string, token: string) {
 type ScriptEntry = {
   script: HTMLScriptElement
   refCount: number
-  cleanupWhenUnused: boolean
 }
 
 const scriptEntriesBySrc = new Map<string, ScriptEntry>()
@@ -55,12 +54,13 @@ export function acquireWidgetScript(src: string, cleanupOnUnmount: boolean) {
   const cached = scriptEntriesBySrc.get(src)
   if (cached) {
     cached.refCount += 1
-    cached.cleanupWhenUnused ||= cleanupOnUnmount
     return {
       release() {
         cached.refCount -= 1
         if (cached.refCount > 0) return
-        if (cached.cleanupWhenUnused) cached.script.remove()
+        // Only the last release decides removal, using *this* acquirer's preference
+        // (avoids a global ratchet where one cleanupOnUnmount=true poisons later holders).
+        if (cleanupOnUnmount) cached.script.remove()
         scriptEntriesBySrc.delete(src)
       },
     }
@@ -80,14 +80,14 @@ export function acquireWidgetScript(src: string, cleanupOnUnmount: boolean) {
           return el
         })()
 
-  const entry: ScriptEntry = { script, refCount: 1, cleanupWhenUnused: cleanupOnUnmount }
+  const entry: ScriptEntry = { script, refCount: 1 }
   scriptEntriesBySrc.set(src, entry)
 
   return {
     release() {
       entry.refCount -= 1
       if (entry.refCount > 0) return
-      if (entry.cleanupWhenUnused) entry.script.remove()
+      if (cleanupOnUnmount) entry.script.remove()
       scriptEntriesBySrc.delete(src)
     },
   }
