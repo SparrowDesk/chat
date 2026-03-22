@@ -14,7 +14,7 @@ beforeEach(() => {
 test('injects SparrowDesk script and sets globals', async () => {
   await render(
     <Chat
-      domain="sparrowdesk7975310.sparrowdesk.com"
+      domain="your-workspace.sparrowdesk.com"
       token="test-token"
       readyTimeoutMs={0}
       shouldInitialize={false}
@@ -23,7 +23,7 @@ test('injects SparrowDesk script and sets globals', async () => {
 
   // No script injection in tests.
   expect(document.querySelector('script[data-sd-chat-widget="true"]')).toBeFalsy()
-  expect(globalThis.SD_WIDGET_DOMAIN).toBe('sparrowdesk7975310.sparrowdesk.com')
+  expect(globalThis.SD_WIDGET_DOMAIN).toBe('your-workspace.sparrowdesk.com')
   expect(globalThis.SD_WIDGET_TOKEN).toBe('test-token')
 })
 
@@ -59,7 +59,7 @@ test('applies tags + contact fields + conversation fields and wires open/close c
 
   await render(
     <Chat
-      domain="sparrowdesk7975310.sparrowdesk.com"
+      domain="your-workspace.sparrowdesk.com"
       token="test-token"
       shouldInitialize={false}
       tags={['vip', 'returning-user']}
@@ -101,7 +101,7 @@ test('can defer initialization until user interaction (connectOnPageLoad=false)'
 
   await render(
     <Chat
-      domain="sparrowdesk7975310.sparrowdesk.com"
+      domain="your-workspace.sparrowdesk.com"
       token="test-token"
       shouldInitialize={false}
       connectOnPageLoad={false}
